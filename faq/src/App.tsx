@@ -13,8 +13,8 @@ import { parse, match, isEmpty, RELATIVE_CUTOFF } from './search'
 import searchIcon from './assets/icons/search.svg'
 
 export default function App() {
-  // The sketch shows the patent question open, so the demo starts there.
-  const [open, setOpen] = useState<Set<string>>(() => new Set(['patent-use']))
+  // Every question starts closed.
+  const [open, setOpen] = useState<Set<string>>(() => new Set())
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
   const [detail, setDetail] = useState<Question | null>(null)
