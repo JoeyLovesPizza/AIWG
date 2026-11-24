@@ -1,0 +1,57 @@
+{
+  "system": {
+    "template": "plate",
+    "color": "#000000",
+    "domain": "AI at Wolf Greenfield",
+    "font": {
+      "family": "Geist Serif",
+      "titleWeight": 400,
+      "labelWeight": 500
+    },
+    "colors": {
+      "light": {
+        "background": "#ff4000",
+        "ink": "#ffffff",
+        "label": "#ffc6b3"
+      },
+      "dark": {
+        "background": "#000000",
+        "ink": "#ffffff",
+        "label": "#989898"
+      },
+      "panel": "#000000"
+    },
+    "margin": 56,
+    "textBottom": 80,
+    "panelGap": 48,
+    "panelWidth": 540,
+    "labelSize": 24,
+    "labelLineHeight": 1.3,
+    "labelGap": 48,
+    "lineHeight": 0.9,
+    "titleSize": {
+      "min": 40,
+      "max": 150
+    },
+    "maxLines": 4
+  },
+  "entries": [
+    {
+      "id": "home",
+      "path": "/",
+      "title": "Frequently asked questions",
+      "group": "Pages",
+      "theme": "dark",
+      "image": {
+        "src": "og/sources/home-card-index.png",
+        "focus": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "layout": "type-and-image",
+      "version": "b09f9507e784",
+      "savedHash": "b7d68416"
+    }
+  ]
+}

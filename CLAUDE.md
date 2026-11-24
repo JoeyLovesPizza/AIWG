@@ -30,6 +30,17 @@ GitHub: JoeyLovesPizza/AIWG (public). `.github/workflows/pages.yml` builds `faq/
 - Footer text is white on the orange as designed (70% white for section heads). At 19px that is below WCAG AA; Joe chose the design.
 - Icons in `src/assets/icons/` were exported from the Figma file. Fonts are Geist, Geist Serif and Geist Pixel from Vercel's `geist` npm package (OFL, licence in `public/fonts/OFL.txt`), so they can be committed.
 
+## Share images
+
+Every public page has a share image, made in the Link Previews tool and saved as a static file. (Installed skill: `.claude/skills/link-previews`.)
+
+- When you add, rename or remove a public page, update `faq/og-images.json` in the same change: add an entry for a new page (a stable `id` made from its path, its path, real title and group, and an image from the page's own material copied into `faq/og/sources/`), change only `path` when a page moves, remove the entry when a page is deleted.
+- Then open http://localhost:5183/link-previews/ on the dev server, check the image, and save it. Re-save when a page's title or main image changes.
+- Wire new pages with `linkPreviewTags(opts, path, page)` from `faq/link-previews/server.ts`; today `linkPreviewsMeta` in `faq/vite.config.ts` writes the Open Graph and Twitter tags for `/` into `index.html` at build time, because the site is a single page and link crawlers don't run JavaScript.
+- Never report a share image as done until its file exists (`faq/public/og/<id>.png`).
+- The tool (`faq/link-previews/`, `faq/src/link-previews/`) is dev-only: `linkPreviewsDev` has `apply: 'serve'` and the tool's HTML isn't a build input, so neither ships. The manifest and `og/sources/` sit outside `public/`, so they aren't deployed either.
+- The home image is the hero's card-index drawing frozen at its resolved frame (card out, tab lit) and exported at 1200×1400 to `og/sources/home-card-index.png`. Re-export it the same way if the drawing changes.
+
 ## Conventions
 - No semicolons, single quotes, 2-space indent.
 - Copy changes from the sketch: "Can't find what you're looking for?" (the sketch had "Cant … your"), and the fourth section is numbered 04 (the sketch repeated 03).
