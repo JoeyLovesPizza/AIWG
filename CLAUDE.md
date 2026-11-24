@@ -2,6 +2,8 @@
 
 Sandbox for tools made for the AI team at Wolf Greenfield (Wolf, Greenfield & Sacks, P.C., an IP law firm). Each tool is its own sub-project folder with its own `package.json`. Everything here is a presentation prototype: no backend, no network calls, no real client data.
 
+GitHub: JoeyLovesPizza/AIWG (public). `.github/workflows/pages.yml` builds `faq/` and publishes it to GitHub Pages on every push to `main`: https://joeylovespizza.github.io/AIWG/. Vite uses `base: './'`, so the build works at that sub-path. The page carries a "Concept prototype · placeholder answers" note, because it uses the firm's real name over placeholder copy; keep it until the AI team has approved the answers.
+
 ## Sub-projects
 
 | Folder | What it is | Run |
