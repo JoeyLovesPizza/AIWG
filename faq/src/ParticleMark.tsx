@@ -1,36 +1,26 @@
-import { useEffect, useRef } from 'react'
-import { footerExposure } from './reveal'
+import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useDialKit, type DialConfig } from 'dialkit'
 
 // The footer "A.I.@" drawn as particles. The text is rendered once to an
 // offscreen canvas in Geist Pixel, sampled on a grid, and each lit sample
 // becomes a particle with a home position. The pointer pushes particles away;
 // a spring pulls them home. The loop only runs while something is moving or
-// the pointer is over the mark, so a resting footer costs nothing.
+// the pointer is over the mark, so a resting footer costs nothing. On touch
+// screens a tap pushes the particles out instead.
 //
 // Intro: particles start scattered and sweep into the letters left to right
-// each time the footer is fully revealed (the drawer above has slid off it).
-// Once the drawer covers most of it again, the particles quietly re-scatter
-// so the next reveal plays it again. Reduced motion skips it.
+// the moment any of the letters comes on screen (scrolled into view on a
+// phone, or uncovered by the drawer on desktop). Once they're fully out of
+// view again, the particles quietly re-scatter so the next reveal replays it.
+// Reduced motion skips it.
 
-// Tuned on a DialKit panel with Joe; these are the settled values.
+// Shape and intro were tuned with Joe on DialKit and settled here.
 const PARAMS = {
   shape: {
     fontSize: 149,
     step: 2, // sample spacing in CSS px
     dot: 1,
     pad: 52, // room for particles to trail without clipping
-  },
-  pointer: {
-    radius: 37,
-    // A gentle outward push, plus a drag along the pointer's own motion:
-    // the drag is what makes particles trail after the cursor.
-    push: 2.1,
-    drag: 0.69,
-    trailDecay: 0.98, // how long the pointer's motion lingers
-  },
-  physics: {
-    spring: 0.005,
-    damping: 0.76,
   },
   intro: {
     scatter: 90, // how far from home particles start, in px
@@ -39,16 +29,46 @@ const PARAMS = {
   },
 }
 
-// Revealed at 98% of the footer exposed; re-armed once it's 30% or less.
-const REVEAL = 0.98
-const REARM = 0.3
+// The mouse and touch interactions are on the "A.I.@ interaction" DialKit
+// panel (dev server only). The loop reads them live, so a slider retunes the
+// running effect. Settle values there and copy them back as these defaults.
+const DIALS = {
+  mouse: {
+    radius: [46, 5, 200, 1], // px around the cursor that feel it
+    // A gentle outward push, plus a drag along the cursor's own motion: the
+    // drag is what makes particles trail after it.
+    push: [0.65, 0, 8, 0.05],
+    drag: [0.24, 0, 1, 0.01],
+    trailDecay: [0.115, 0, 0.995, 0.005], // how long the cursor's motion lingers
+  },
+  // Touch screens have no hover, so a tap pushes the particles out from the
+  // finger in one burst and the spring brings them home.
+  touch: {
+    radius: [110, 20, 300, 1], // px around the finger that feel the push
+    push: [21, 0, 40, 0.5], // outward velocity at the centre, px per frame
+    testTap: { type: 'action', label: 'Test tap' },
+  },
+  // How both settle back into the letters.
+  physics: {
+    spring: [0.001, 0.0002, 0.2, 0.0002],
+    damping: [0.99, 0.5, 0.998, 0.001],
+  },
+} satisfies DialConfig
 
 type Particle = { x: number; y: number; vx: number; vy: number; hx: number; hy: number; delay: number }
 
 export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const revealed = useRef(false)
-  const { fontSize, step: STEP, pad: PAD } = PARAMS.shape
+  const dial = useDialKit('A.I.@ interaction', DIALS, {
+    onAction: (action) => {
+      if (action.endsWith('testTap')) ref.current?.dispatchEvent(new Event('testtap'))
+    },
+  })
+  const live = useRef(dial)
+  live.current = dial
+  const { step: STEP, pad: PAD } = PARAMS.shape
+  const fontSize = useFittedSize(ref, text)
 
   useEffect(() => {
     const canvas = ref.current
@@ -125,8 +145,8 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
 
     function step() {
       frame = 0
-      const { radius: RADIUS, push: PUSH, drag: DRAG, trailDecay } = PARAMS.pointer
-      const { spring: SPRING, damping: DAMPING } = PARAMS.physics
+      const { radius: RADIUS, push: PUSH, drag: DRAG, trailDecay } = live.current.mouse
+      const { spring: SPRING, damping: DAMPING } = live.current.physics
       let moving = false
       const active = pointer.inside || Math.abs(pointer.vx) + Math.abs(pointer.vy) > 0.05
       tick++
@@ -169,6 +189,8 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
     }
 
     function onMove(e: PointerEvent) {
+      // Hover is a mouse thing; a finger moving over the mark is a scroll.
+      if (e.pointerType !== 'mouse') return
       const r = canvas!.getBoundingClientRect()
       const x = e.clientX - r.left
       const y = e.clientY - r.top
@@ -185,18 +207,53 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
     function onLeave() {
       pointer.inside = false
     }
+    // One outward burst from a point, strongest at the centre.
+    function burst(x: number, y: number) {
+      if (still.matches) return
+      const { radius, push } = live.current.touch
+      for (const p of particles) {
+        const dx = p.x - x
+        const dy = p.y - y
+        const d = Math.hypot(dx, dy)
+        if (d >= radius) continue
+        // At the exact centre there's no direction, so pick a random one.
+        const a = d > 0.01 ? Math.atan2(dy, dx) : Math.random() * Math.PI * 2
+        const f = (1 - d / radius) * push
+        p.vx += Math.cos(a) * f
+        p.vy += Math.sin(a) * f
+      }
+      wake()
+    }
+    function onTap(e: PointerEvent) {
+      if (e.pointerType === 'mouse') return
+      const r = canvas!.getBoundingClientRect()
+      burst(e.clientX - r.left, e.clientY - r.top)
+    }
+    // The panel's "Test tap", so the touch burst can be tuned with a mouse.
+    const testTap = () => burst(width / 2, height / 2)
 
     document.fonts.load(font).then(() => {
       if (!cancelled) build()
     })
+    // How much of the letters themselves (the canvas minus its trail room) is
+    // on screen and uncovered: below the drawer's bottom edge, inside the
+    // viewport. The intro starts the moment any of it shows and re-arms once
+    // none does, so it plays on every reveal.
+    const drawer = document.querySelector('.drawer')
+    function letterExposure() {
+      const r = canvas!.getBoundingClientRect()
+      const top = Math.max(r.top + PAD, drawer?.getBoundingClientRect().bottom ?? 0, 0)
+      const bottom = Math.min(r.bottom - PAD, window.innerHeight)
+      return Math.max(0, bottom - top)
+    }
     function onScroll() {
       if (still.matches || !particles.length) return
-      const e = footerExposure()
-      if (!revealed.current && e >= REVEAL) {
+      const e = letterExposure()
+      if (!revealed.current && e > 0) {
         revealed.current = true
         tick = 0
         wake()
-      } else if (revealed.current && e <= REARM) {
+      } else if (revealed.current && e === 0) {
         revealed.current = false
         cancelAnimationFrame(frame)
         frame = 0
@@ -206,6 +263,8 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
+    canvas.addEventListener('pointerdown', onTap)
+    canvas.addEventListener('testtap', testTap)
     canvas.addEventListener('pointermove', onMove)
     canvas.addEventListener('pointerleave', onLeave)
     canvas.addEventListener('pointercancel', onLeave)
@@ -214,6 +273,8 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
       cancelAnimationFrame(frame)
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
+      canvas.removeEventListener('pointerdown', onTap)
+      canvas.removeEventListener('testtap', testTap)
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerleave', onLeave)
       canvas.removeEventListener('pointercancel', onLeave)
@@ -222,4 +283,34 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
 
 
   return <canvas ref={ref} className="footer-mark" aria-hidden style={{ margin: -PAD }} />
+}
+
+// On phones the mark fills the footer's width, as in the mobile design;
+// wider screens use the fixed size from PARAMS. Measured from the canvas's
+// parent, so it follows rotation and resizing.
+function useFittedSize(ref: RefObject<HTMLCanvasElement | null>, text: string) {
+  const [size, setSize] = useState(PARAMS.shape.fontSize)
+  useEffect(() => {
+    const parent = ref.current?.parentElement
+    if (!parent) return
+    const narrow = matchMedia('(max-width: 900px)')
+    const probe = document.createElement('canvas').getContext('2d')!
+    let alive = true
+    const update = () => {
+      if (!narrow.matches) return setSize(PARAMS.shape.fontSize)
+      probe.font = '100px "Geist Pixel Line"'
+      const per100 = probe.measureText(text).width
+      if (per100 > 0) setSize(Math.floor((parent.clientWidth / per100) * 100))
+    }
+    document.fonts.load('100px "Geist Pixel Line"').then(() => alive && update())
+    const ro = new ResizeObserver(update)
+    ro.observe(parent)
+    narrow.addEventListener('change', update)
+    return () => {
+      alive = false
+      ro.disconnect()
+      narrow.removeEventListener('change', update)
+    }
+  }, [ref, text])
+  return size
 }

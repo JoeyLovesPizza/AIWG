@@ -47,6 +47,10 @@ export function QuestionRow({ q, open, query, onToggle, onDetails }: Props) {
   })
 
   const label = full ? 'Show TL;DR' : 'Show full answer'
+  const toggleLength = () => {
+    setFull((f) => !f)
+    setSwapped(true)
+  }
 
   return (
     <li id={`q-${q.id}`} className="q" data-open={open || undefined}>
@@ -55,10 +59,7 @@ export function QuestionRow({ q, open, query, onToggle, onDetails }: Props) {
         <button
           type="button"
           className="icon-button q-details"
-          onClick={() => {
-            setFull((f) => !f)
-            setSwapped(true)
-          }}
+          onClick={toggleLength}
           aria-label={label}
           aria-controls={panelId}
         >
@@ -94,10 +95,17 @@ export function QuestionRow({ q, open, query, onToggle, onDetails }: Props) {
                 <Highlight text={full ? q.answer : q.tldr} query={query} />
               </p>
             </div>
-            <button type="button" className="sources-pill" onClick={onDetails}>
-              <SourceStack kinds={q.sources.map((s) => s.kind)} />
-              {q.sources.length} {q.sources.length === 1 ? 'source' : 'sources'}
-            </button>
+            <div className="q-pills">
+              <button type="button" className="sources-pill" onClick={onDetails}>
+                <SourceStack kinds={q.sources.map((s) => s.kind)} />
+                {q.sources.length} {q.sources.length === 1 ? 'source' : 'sources'}
+              </button>
+              {/* Phones have no room for the gutter icon, so the length switch
+                  sits here as a pill instead (hidden on wider screens). */}
+              <button type="button" className="sources-pill q-length-pill" onClick={toggleLength} aria-controls={panelId}>
+                {full ? 'TL;DR' : 'Full answer'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

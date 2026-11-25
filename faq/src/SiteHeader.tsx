@@ -26,8 +26,9 @@ export function SiteHeader() {
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <a className="wordmark" href="#">
-        AI at wolf greenfield
+      <a className="wordmark" href="#" aria-label="AI at Wolf Greenfield">
+        <span className="wide-only">AI at wolf greenfield</span>
+        <span className="narrow-only">AI @ wolf greenfield</span>
       </a>
       <div className="popover-anchor">
         <button

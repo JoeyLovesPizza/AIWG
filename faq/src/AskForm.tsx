@@ -1,5 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState, type FormEvent, type Ref } from 'react'
 import { scrollBehavior } from './motion'
+import { useNarrow } from './useNarrow'
+import planeIcon from './assets/icons/paper-plane.svg'
 
 export type AskFormHandle = { prefill: (text: string) => void }
 
@@ -28,6 +30,7 @@ export function AskForm({ ref }: { ref: Ref<AskFormHandle> }) {
   const [answer, setAnswer] = useState('')
   const [error, setError] = useState(false)
   const [phase, setPhase] = useState<Phase>('idle')
+  const narrow = useNarrow()
   const [announcement, setAnnouncement] = useState('')
   const questionRef = useRef<HTMLTextAreaElement>(null)
   const rootRef = useRef<HTMLElement>(null)
@@ -116,7 +119,7 @@ export function AskForm({ ref }: { ref: Ref<AskFormHandle> }) {
               id="f-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Lead attorney of the practice management group"
+              placeholder={narrow ? 'Legal assistant' : 'Lead attorney of the practice management group'}
               autoComplete="organization-title"
               readOnly={phase === 'leaving'}
             />
@@ -164,7 +167,9 @@ export function AskForm({ ref }: { ref: Ref<AskFormHandle> }) {
                 as the longer one and doesn't jump when it swaps. */}
             <button type="submit" className="pill pill-solid send-button" aria-disabled={busy}>
               <span className="send-label" aria-hidden={busy}>
-                {sendLabel}
+                {/* Phones show a paper plane instead of the word. */}
+                <span className="send-text">{sendLabel}</span>
+                <img className="send-plane" src={planeIcon} alt="" width={22} height={22} />
               </span>
               <span className="send-done" aria-hidden={!busy}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -190,7 +195,13 @@ export function AskForm({ ref }: { ref: Ref<AskFormHandle> }) {
                 setError(false)
               }}
             >
-              {mode === 'ask' ? 'Submit your own FAQ' : 'Ask a question instead'}
+              {mode === 'ask' ? (
+                <span>
+                  Submit your own<span className="wide-only"> FAQ</span>
+                </span>
+              ) : (
+                'Ask a question instead'
+              )}
             </button>
           </div>
           <p className="sr-only" role="status">

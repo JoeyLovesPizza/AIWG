@@ -684,6 +684,11 @@ mark {
   text-wrap: pretty;
 }
 
+.q-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
 .sources-pill {
   display: inline-flex;
   align-items: center;
@@ -1338,86 +1343,194 @@ mark {
 
 /* ---------- Narrow screens ---------- */
 
+/* Shown or hidden by breakpoint: copy and controls that only one layout uses. */
+.narrow-only,
+.q-length-pill {
+  display: none;
+}
+.send-plane {
+  display: none;
+}
+
+/* ---------- Narrow screens (the mobile design, Figma 13:379) ---------- */
+
 @media (max-width: 900px) {
   :root {
     --q-indent: 0px;
   }
+  .wide-only {
+    display: none;
+  }
+  .narrow-only {
+    display: inline;
+  }
+
+  .site-header {
+    min-height: 43px;
+  }
+  .wordmark {
+    font-size: var(--text-body);
+    font-weight: 500;
+  }
+
   .page {
-    padding-top: 56px;
-    gap: 72px;
+    padding-top: 58px;
+    gap: 93px;
   }
   .hero {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     min-height: 0;
-    gap: 32px;
+    gap: 55px;
   }
   .hero-art {
-    width: 100%;
-    max-width: 400px;
+    width: min(279px, 100%);
+    max-width: none;
   }
   .hero-copy {
-    width: auto;
-  }
-  .hero-title {
-    font-size: var(--text-title-lg);
-    line-height: 1.2;
+    flex: none;
+    width: 100%;
   }
   .hero-lede {
-    font-size: var(--text-body-lg);
-    line-height: 1.55;
+    font-size: var(--text-lead);
+    line-height: 1.5;
   }
+
+  /* Search starts as a round icon button and opens into the field when it's
+     focused or holds a query. */
+  .faq {
+    gap: 29px;
+  }
+  .search {
+    flex: 0 0 52px;
+    height: 52px;
+    padding: 0 16px;
+    transition:
+      flex-basis 250ms var(--ease-out),
+      background-color 150ms ease;
+  }
+  .search input {
+    width: 0;
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .search:focus-within,
+  .search[data-filled] {
+    flex-basis: 100%;
+  }
+  .search:focus-within input,
+  .search[data-filled] input {
+    width: auto;
+    opacity: 1;
+  }
+  .search:focus-within ~ .popover-anchor,
+  .search[data-filled] ~ .popover-anchor {
+    display: none;
+  }
+
+  /* Section heads: title left, number right, no count. */
   .section-head {
-    grid-template-columns: 52px 1fr auto;
-  }
-  .section-num,
-  .section-count {
-    font-size: var(--text-body-lg);
+    grid-template-columns: 1fr auto;
   }
   .section-title {
-    font-size: var(--text-question);
+    order: 1;
+    font-size: var(--text-section);
   }
-  .q-gutter {
+  .section-num {
+    order: 2;
+  }
+  .section-count {
+    display: none;
+  }
+
+  .q-gutter,
+  .q-chevron,
+  .q-mode {
     display: none;
   }
   .q-text {
-    font-size: var(--text-heading-sm);
+    font-size: var(--text-lead);
   }
   .q-answer {
     font-size: var(--text-body-lg);
-    line-height: 1.5;
+    line-height: 1.45;
   }
+  .q-length-pill {
+    display: inline-flex;
+    padding-inline: 15px;
+  }
+
   .ask {
-    gap: 40px;
+    gap: 41px;
   }
   .ask-title {
-    font-size: var(--text-section);
+    font-size: var(--text-title);
   }
   .ask-card {
-    padding: 28px 22px;
-    border-radius: 28px;
+    padding: 42px 41px;
   }
   .field {
-    grid-template-columns: 1fr;
-    row-gap: 6px;
+    grid-template-columns: 75px 1fr;
+    column-gap: 15px;
   }
-  .ask-actions {
-    flex-direction: column-reverse;
+  /* Send is a round paper-plane button; the word stays for screen readers. */
+  .send-button.pill {
+    width: 57px;
+    min-height: 57px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .ask-form:not([data-phase='leaving'], [data-phase='sent']) .send-button {
+    background: var(--color-fill);
+  }
+  .send-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .send-plane {
+    display: block;
+    rotate: -45deg;
+  }
+  .send-done {
+    font-size: 0;
+  }
+
+  /* Footer: links first, the A.I.@ mark below them at full width. */
+  .site-footer {
+    overflow-x: clip;
   }
   .footer-inner {
-    padding: 56px 16px 40px;
+    padding: 40px 18px 18px;
+    gap: 48px;
   }
   .footer-top {
     flex-direction: column;
-    gap: 48px;
+    gap: 50px;
+    padding-right: 20px;
+  }
+  .footer-brand {
+    order: 2;
+    padding-top: 0;
   }
   .footer-cols {
-    font-size: var(--text-body-lg);
+    gap: 30px 45px;
   }
   .footer-bottom {
-    font-size: var(--text-ui);
-    line-height: 1.6;
+    flex-direction: column;
+    gap: 9px;
+    padding-top: 17px;
+    /* Keeps the cities on one line down to a 375px phone. */
+    font-size: min(var(--text-body-lg), 4.6vw);
+    white-space: nowrap;
   }
+  .footer-bottom p {
+    line-height: 1.95;
+  }
+
   .sheet-inner {
     padding: 20px 20px 28px;
   }

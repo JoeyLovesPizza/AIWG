@@ -124,7 +124,7 @@ export default function App() {
 
         <section className="faq" aria-label="Questions">
           <div className="toolbar">
-            <label className="search">
+            <label className="search" data-filled={query ? true : undefined}>
               <img src={searchIcon} alt="" width={20} height={20} />
               <span className="sr-only">Search questions</span>
               <input
