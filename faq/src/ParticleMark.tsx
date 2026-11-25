@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { useDialKit, type DialConfig } from 'dialkit'
 
 // The footer "A.I.@" drawn as particles. The text is rendered once to an
 // offscreen canvas in Geist Pixel, sampled on a grid, and each lit sample
@@ -29,44 +28,35 @@ const PARAMS = {
   },
 }
 
-// The mouse and touch interactions are on the "A.I.@ interaction" DialKit
-// panel (dev server only). The loop reads them live, so a slider retunes the
-// running effect. Settle values there and copy them back as these defaults.
-const DIALS = {
+// Mouse and touch feel, tuned with Joe on a DialKit panel (since removed).
+const FEEL = {
   mouse: {
-    radius: [46, 5, 200, 1], // px around the cursor that feel it
+    radius: 46, // px around the cursor that feel it
     // A gentle outward push, plus a drag along the cursor's own motion: the
     // drag is what makes particles trail after it.
-    push: [0.65, 0, 8, 0.05],
-    drag: [0.24, 0, 1, 0.01],
-    trailDecay: [0.115, 0, 0.995, 0.005], // how long the cursor's motion lingers
+    push: 0.65,
+    drag: 0.24,
+    trailDecay: 0.115, // how long the cursor's motion lingers
   },
   // Touch screens have no hover, so a tap pushes the particles out from the
   // finger in one burst and the spring brings them home.
   touch: {
-    radius: [110, 20, 300, 1], // px around the finger that feel the push
-    push: [21, 0, 40, 0.5], // outward velocity at the centre, px per frame
-    testTap: { type: 'action', label: 'Test tap' },
+    radius: 110, // px around the finger that feel the push
+    push: 21, // outward velocity at the centre, px per frame
   },
-  // How both settle back into the letters.
+  // How both settle back into the letters (also paces the intro): a soft
+  // spring with little friction, about 8 seconds to rest.
   physics: {
-    spring: [0.001, 0.0002, 0.2, 0.0002],
-    damping: [0.99, 0.5, 0.998, 0.001],
+    spring: 0.001,
+    damping: 0.99,
   },
-} satisfies DialConfig
+}
 
 type Particle = { x: number; y: number; vx: number; vy: number; hx: number; hy: number; delay: number }
 
 export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const revealed = useRef(false)
-  const dial = useDialKit('A.I.@ interaction', DIALS, {
-    onAction: (action) => {
-      if (action.endsWith('testTap')) ref.current?.dispatchEvent(new Event('testtap'))
-    },
-  })
-  const live = useRef(dial)
-  live.current = dial
   const { step: STEP, pad: PAD } = PARAMS.shape
   const fontSize = useFittedSize(ref, text)
 
@@ -145,8 +135,8 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
 
     function step() {
       frame = 0
-      const { radius: RADIUS, push: PUSH, drag: DRAG, trailDecay } = live.current.mouse
-      const { spring: SPRING, damping: DAMPING } = live.current.physics
+      const { radius: RADIUS, push: PUSH, drag: DRAG, trailDecay } = FEEL.mouse
+      const { spring: SPRING, damping: DAMPING } = FEEL.physics
       let moving = false
       const active = pointer.inside || Math.abs(pointer.vx) + Math.abs(pointer.vy) > 0.05
       tick++
@@ -210,7 +200,7 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
     // One outward burst from a point, strongest at the centre.
     function burst(x: number, y: number) {
       if (still.matches) return
-      const { radius, push } = live.current.touch
+      const { radius, push } = FEEL.touch
       for (const p of particles) {
         const dx = p.x - x
         const dy = p.y - y
@@ -229,8 +219,6 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
       const r = canvas!.getBoundingClientRect()
       burst(e.clientX - r.left, e.clientY - r.top)
     }
-    // The panel's "Test tap", so the touch burst can be tuned with a mouse.
-    const testTap = () => burst(width / 2, height / 2)
 
     document.fonts.load(font).then(() => {
       if (!cancelled) build()
@@ -264,7 +252,6 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     canvas.addEventListener('pointerdown', onTap)
-    canvas.addEventListener('testtap', testTap)
     canvas.addEventListener('pointermove', onMove)
     canvas.addEventListener('pointerleave', onLeave)
     canvas.addEventListener('pointercancel', onLeave)
@@ -274,7 +261,6 @@ export function ParticleMark({ text = 'A.I.@' }: { text?: string }) {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
       canvas.removeEventListener('pointerdown', onTap)
-      canvas.removeEventListener('testtap', testTap)
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerleave', onLeave)
       canvas.removeEventListener('pointercancel', onLeave)
